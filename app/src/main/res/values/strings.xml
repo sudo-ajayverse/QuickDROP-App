@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QuickDrop</string>
+
+    <string name="status_uploading">Uploading…</string>
+    <string name="status_uploaded">Uploaded ✔</string>
+    <string name="status_upload_failed">Upload failed</string>
+    <string name="status_upload_cancelled">Upload cancelled</string>
+    <string name="status_no_internet">No internet</string>
+    <string name="status_no_file">No file to upload</string>
+    <string name="status_share_hint">Share a file to QuickDrop</string>
+</resources>
+

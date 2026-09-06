@@ -36,7 +36,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk QuickDROP.apk
+        run: mv $(find app/build/outputs/apk/release/ -name "*.apk" | head -1) QuickDROP.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1

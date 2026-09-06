@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import com.quickdrop.sharetarget.BuildConfig
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -15,11 +16,12 @@ import java.io.IOException
 
 object AutoUpdater {
     private const val TAG = "AutoUpdater"
-    private const val REPO_OWNER = "sudo-ajayverse"
-    private const val REPO_NAME = "QuickDROP-App"
-    private const val GITHUB_API_URL = "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
+    
+    // Use repo info from BuildConfig (defined in build.gradle.kts from gradle.properties)
+    private val REPO_OWNER = BuildConfig.REPO_OWNER
+    private val REPO_NAME = BuildConfig.REPO_NAME
+    private val GITHUB_API_URL = "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
 
-    // OkHttpClient is normally a singleton in the app, but creating a quick one here for simplicity
     private val client = OkHttpClient()
 
     data class UpdateInfo(
@@ -102,9 +104,7 @@ object AutoUpdater {
                 .setTitle("Downloading QuickDrop Update")
                 .setDescription("Version $versionTag is downloading...")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                // Use the standard Downloads directory
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "QuickDrop-$versionTag.apk")
-                // Required for Android 10+ if you want MediaStore updates, but for normal downloads, it's fine.
                 .setMimeType("application/vnd.android.package-archive")
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(true)

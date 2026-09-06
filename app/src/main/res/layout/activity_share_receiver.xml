@@ -18,10 +18,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Larger, Bold Modern Top Bar -->
+            <!-- Bold Modern Top Bar -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="90dp"
+                android:layout_height="100dp"
                 android:layout_margin="16dp"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="8dp"
@@ -40,7 +40,7 @@
                         android:layout_weight="1"
                         android:text="@string/app_name"
                         android:textColor="?attr/colorOnSurface"
-                        android:textSize="32sp"
+                        android:textSize="36sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -48,23 +48,23 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/version_badge_bg"
-                        android:paddingHorizontal="18dp"
+                        android:paddingHorizontal="20dp"
                         android:paddingVertical="10dp"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
                     <ProgressBar
                         android:id="@+id/updateCheckSpinner"
                         style="?android:attr/progressBarStyleSmall"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_marginStart="18dp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="20dp"
                         android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Main Content Area -->
+            <!-- Centered Status Content -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -75,8 +75,8 @@
                 <ProgressBar
                     android:id="@+id/progress"
                     style="?android:attr/progressBarStyleLarge"
-                    android:layout_width="90dp"
-                    android:layout_height="90dp"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
                     android:indeterminateTint="?attr/colorPrimary"
                     android:visibility="gone" />
 
@@ -84,12 +84,12 @@
                     android:id="@+id/statusText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="40dp"
+                    android:layout_marginTop="48dp"
                     android:gravity="center"
-                    android:lineSpacingExtra="10dp"
+                    android:lineSpacingExtra="12dp"
                     android:text="@string/status_share_hint"
                     android:textColor="?android:attr/textColorSecondary"
-                    android:textSize="24sp"
+                    android:textSize="28sp"
                     android:textStyle="bold" />
 
             </LinearLayout>

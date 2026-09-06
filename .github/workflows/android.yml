@@ -32,8 +32,25 @@ jobs:
           echo "$KEYSTORE_B64" | tr -d '\n\r ' | base64 -d > release.keystore
           echo "Keystore size: $(wc -c < release.keystore) bytes"
 
+      - name: Auto-Bump Tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: 'v'
+
+      - name: Derive Android version from tag
+        run: |
+          TAG="${{ steps.tag_version.outputs.new_tag }}"
+          VERSION_NAME="${TAG#v}"
+          VERSION_CODE="${{ github.run_number }}"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace -PVERSION_NAME="$VERSION_NAME" -PVERSION_CODE="$VERSION_CODE"
         env:
           SIGNING_STORE_FILE: ${{ github.workspace }}/release.keystore
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -48,14 +65,6 @@ jobs:
         with:
           name: QuickDROP
           path: app/build/outputs/apk/release/QuickDROP.apk
-
-      - name: Auto-Bump Tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: patch
-          tag_prefix: 'v'
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

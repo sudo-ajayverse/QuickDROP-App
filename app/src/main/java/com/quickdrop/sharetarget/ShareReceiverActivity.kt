@@ -26,6 +26,8 @@ class ShareReceiverActivity : ComponentActivity() {
     private lateinit var versionText: TextView
     private lateinit var updateCheckSpinner: ProgressBar
 
+    private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_share_receiver)
@@ -34,6 +36,11 @@ class ShareReceiverActivity : ComponentActivity() {
         statusText = findViewById(R.id.statusText)
         versionText = findViewById(R.id.versionText)
         updateCheckSpinner = findViewById(R.id.updateCheckSpinner)
+        swipeRefresh = findViewById(R.id.swipeRefresh)
+
+        swipeRefresh.setOnRefreshListener {
+            checkForUpdates(isManualRefresh = true)
+        }
 
         // Show current version in the top bar
         val currentVersion = com.quickdrop.sharetarget.updater.AutoUpdater.getCurrentVersion(this)
@@ -43,7 +50,7 @@ class ShareReceiverActivity : ComponentActivity() {
         if (share.uris.isEmpty()) {
             if (intent?.action == Intent.ACTION_MAIN) {
                 showIdle(getString(R.string.status_share_hint))
-                checkForUpdates()
+                checkForUpdates(isManualRefresh = false)
             } else {
                 showFailure(getString(R.string.status_no_file))
             }
@@ -58,20 +65,23 @@ class ShareReceiverActivity : ComponentActivity() {
         enqueueUploadWork(share)
 
         // Check for updates in the background during share flow
-        checkForUpdates()
+        checkForUpdates(isManualRefresh = false)
     }
 
     private var pendingUpdate: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo? = null
 
-    private fun checkForUpdates() {
-        // Show spinner in the top bar while the API call is in-flight
-        updateCheckSpinner.visibility = View.VISIBLE
+    private fun checkForUpdates(isManualRefresh: Boolean) {
+        if (!isManualRefresh) {
+            // Show spinner in the top bar while the API call is in-flight
+            updateCheckSpinner.visibility = View.VISIBLE
+        }
 
         com.quickdrop.sharetarget.updater.AutoUpdater.checkForUpdates(
             context = this,
             onUpdateAvailable = { updateInfo ->
                 runOnUiThread {
                     updateCheckSpinner.visibility = View.GONE
+                    swipeRefresh.isRefreshing = false
                     if (intent?.action == Intent.ACTION_MAIN) {
                         showUpdateDialog(updateInfo)
                     } else {
@@ -80,11 +90,23 @@ class ShareReceiverActivity : ComponentActivity() {
                 }
             },
             onError = { error ->
-                runOnUiThread { updateCheckSpinner.visibility = View.GONE }
+                runOnUiThread { 
+                    updateCheckSpinner.visibility = View.GONE
+                    swipeRefresh.isRefreshing = false
+                    if (isManualRefresh) {
+                        android.widget.Toast.makeText(this@ShareReceiverActivity, "Failed to check for updates.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
                 android.util.Log.e("ShareReceiverActivity", "Update check failed: $error")
             },
             onUpToDate = {
-                runOnUiThread { updateCheckSpinner.visibility = View.GONE }
+                runOnUiThread { 
+                    updateCheckSpinner.visibility = View.GONE
+                    swipeRefresh.isRefreshing = false
+                    if (isManualRefresh) {
+                        android.widget.Toast.makeText(this@ShareReceiverActivity, "You have the latest version!", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         )
     }

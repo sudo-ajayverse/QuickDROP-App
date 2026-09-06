@@ -31,7 +31,8 @@ object AutoUpdater {
     fun checkForUpdates(
         context: Context,
         onUpdateAvailable: (UpdateInfo) -> Unit,
-        onError: ((String) -> Unit)? = null
+        onError: ((String) -> Unit)? = null,
+        onUpToDate: (() -> Unit)? = null
     ) {
         val request = Request.Builder()
             .url(GITHUB_API_URL)
@@ -85,6 +86,7 @@ object AutoUpdater {
                         onUpdateAvailable(UpdateInfo(tagName, body, downloadUrl))
                     } else {
                         Log.i(TAG, "App is up to date (current: $currentVersion, remote: $tagName)")
+                        onUpToDate?.invoke()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse release JSON", e)

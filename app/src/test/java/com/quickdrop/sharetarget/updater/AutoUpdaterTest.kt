@@ -28,5 +28,10 @@ class AutoUpdaterTest {
         // Different length versions
         assertTrue(AutoUpdater.isNewerVersion("1.0", "1.0.1"))
         assertFalse(AutoUpdater.isNewerVersion("1.0.1", "1.0"))
+
+        // Multi-digit versions
+        assertTrue(AutoUpdater.isNewerVersion("0.5.9", "0.5.10"))
+        assertFalse(AutoUpdater.isNewerVersion("0.5.10", "0.5.9"))
+        assertTrue(AutoUpdater.isNewerVersion("0.5.10", "0.6.0"))
     }
 }

@@ -23,6 +23,8 @@ class ShareReceiverActivity : ComponentActivity() {
 
     private lateinit var progress: ProgressBar
     private lateinit var statusText: TextView
+    private lateinit var versionText: TextView
+    private lateinit var updateCheckSpinner: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,13 +32,16 @@ class ShareReceiverActivity : ComponentActivity() {
 
         progress = findViewById(R.id.progress)
         statusText = findViewById(R.id.statusText)
+        versionText = findViewById(R.id.versionText)
+        updateCheckSpinner = findViewById(R.id.updateCheckSpinner)
+
+        // Show current version in the top bar
+        val currentVersion = com.quickdrop.sharetarget.updater.AutoUpdater.getCurrentVersion(this)
+        versionText.text = "v$currentVersion"
 
         val share = parseShareIntent(intent)
         if (share.uris.isEmpty()) {
-            // When launched from the launcher (or Android Studio), there is no shared content.
-            // Show a minimal hint and exit.
             if (intent?.action == Intent.ACTION_MAIN) {
-                // When opened from the launcher, keep the UI visible (useful for debugging).
                 showIdle(getString(R.string.status_share_hint))
                 checkForUpdates()
             } else {
@@ -51,7 +56,7 @@ class ShareReceiverActivity : ComponentActivity() {
         }
 
         enqueueUploadWork(share)
-        
+
         // Check for updates in the background during share flow
         checkForUpdates()
     }
@@ -59,21 +64,27 @@ class ShareReceiverActivity : ComponentActivity() {
     private var pendingUpdate: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo? = null
 
     private fun checkForUpdates() {
+        // Show spinner in the top bar while the API call is in-flight
+        updateCheckSpinner.visibility = View.VISIBLE
+
         com.quickdrop.sharetarget.updater.AutoUpdater.checkForUpdates(
             context = this,
             onUpdateAvailable = { updateInfo ->
                 runOnUiThread {
+                    updateCheckSpinner.visibility = View.GONE
                     if (intent?.action == Intent.ACTION_MAIN) {
-                        // If launched normally, show immediately
                         showUpdateDialog(updateInfo)
                     } else {
-                        // If sharing, store for later
                         pendingUpdate = updateInfo
                     }
                 }
             },
             onError = { error ->
+                runOnUiThread { updateCheckSpinner.visibility = View.GONE }
                 android.util.Log.e("ShareReceiverActivity", "Update check failed: $error")
+            },
+            onUpToDate = {
+                runOnUiThread { updateCheckSpinner.visibility = View.GONE }
             }
         )
     }

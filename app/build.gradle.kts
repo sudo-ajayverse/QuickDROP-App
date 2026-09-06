@@ -56,6 +56,23 @@ android {
         buildConfigField("String", "SUPABASE_FILES_TABLE", asBuildConfigString(readProp("SUPABASE_FILES_TABLE", "files")))
     }
 
+    signingConfigs {
+        create("release") {
+            // These env vars are set by the GitHub Actions workflow.
+            // When building locally without them, signing is simply skipped.
+            val storeFile = System.getenv("SIGNING_STORE_FILE")
+            val storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            val keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+            val keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            if (storeFile != null) {
+                this.storeFile = file(storeFile)
+                this.storePassword = storePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -63,6 +80,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Use signing config only when the env vars are available (CI)
+            val cfg = signingConfigs.getByName("release")
+            if (cfg.storeFile != null) {
+                signingConfig = cfg
+            }
         }
         debug {
             // Keep defaults

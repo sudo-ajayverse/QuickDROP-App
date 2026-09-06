@@ -111,24 +111,38 @@ class ShareReceiverActivity : ComponentActivity() {
         )
     }
 
+    private fun stripMarkdown(text: String): String {
+        return text
+            .replace(Regex("#{1,6}\\s*"), "")              // headings
+            .replace(Regex("\\[([^]]+)]\\([^)]+\\)"), "$1") // [text](url) → text
+            .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")      // **bold**
+            .replace(Regex("\\*(.+?)\\*"), "$1")            // *italic*
+            .replace(Regex("^\\s*[*-]\\s+", RegexOption.MULTILINE), "• ") // bullets
+            .trim()
+    }
+
     private fun showUpdateDialog(updateInfo: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo) {
         if (isFinishing) return
+        val cleanNotes = stripMarkdown(updateInfo.releaseNotes)
         android.app.AlertDialog.Builder(this)
-            .setTitle("Update Available")
-            .setMessage("Version ${updateInfo.version} is available.\n\n${updateInfo.releaseNotes}")
-            .setPositiveButton("Update Now") { _, _ ->
+            .setTitle("Update Available — ${updateInfo.version}")
+            .setMessage(cleanNotes.ifBlank { "A new version is available." })
+            .setPositiveButton("Update Now") { dialog, _ ->
+                dialog.dismiss()
+                android.widget.Toast.makeText(this, "Downloading update…", android.widget.Toast.LENGTH_SHORT).show()
                 com.quickdrop.sharetarget.updater.AutoUpdater.downloadApk(
                     this,
                     updateInfo.downloadUrl,
                     updateInfo.version
                 )
-                finishAndRemoveTask()
+                // Don't close the app — let the download happen in the background
             }
-            .setNegativeButton("Later") { _, _ ->
-                finishAndRemoveTask()
+            .setNegativeButton("Later") { dialog, _ ->
+                dialog.dismiss()
+                // Just dismiss — don't close the app
             }
             .setOnCancelListener {
-                finishAndRemoveTask()
+                // Back press — just dismiss, don't close
             }
             .show()
     }

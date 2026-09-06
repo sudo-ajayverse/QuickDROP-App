@@ -1,4 +1,4 @@
-name: Android CI & Auto Release
+name: Android CI & Auto Release[disabled/extra]
 
 on:
   push:

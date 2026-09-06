@@ -38,6 +38,7 @@ class ShareReceiverActivity : ComponentActivity() {
             if (intent?.action == Intent.ACTION_MAIN) {
                 // When opened from the launcher, keep the UI visible (useful for debugging).
                 showIdle(getString(R.string.status_share_hint))
+                checkForUpdates()
             } else {
                 showFailure(getString(R.string.status_no_file))
             }
@@ -50,6 +51,53 @@ class ShareReceiverActivity : ComponentActivity() {
         }
 
         enqueueUploadWork(share)
+        
+        // Check for updates in the background during share flow
+        checkForUpdates()
+    }
+
+    private var pendingUpdate: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo? = null
+
+    private fun checkForUpdates() {
+        com.quickdrop.sharetarget.updater.AutoUpdater.checkForUpdates(
+            context = this,
+            onUpdateAvailable = { updateInfo ->
+                runOnUiThread {
+                    if (intent?.action == Intent.ACTION_MAIN) {
+                        // If launched normally, show immediately
+                        showUpdateDialog(updateInfo)
+                    } else {
+                        // If sharing, store for later
+                        pendingUpdate = updateInfo
+                    }
+                }
+            },
+            onError = { error ->
+                android.util.Log.e("ShareReceiverActivity", "Update check failed: $error")
+            }
+        )
+    }
+
+    private fun showUpdateDialog(updateInfo: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo) {
+        if (isFinishing) return
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Update Available")
+            .setMessage("Version ${updateInfo.version} is available.\n\n${updateInfo.releaseNotes}")
+            .setPositiveButton("Update Now") { _, _ ->
+                com.quickdrop.sharetarget.updater.AutoUpdater.downloadApk(
+                    this,
+                    updateInfo.downloadUrl,
+                    updateInfo.version
+                )
+                finishAndRemoveTask()
+            }
+            .setNegativeButton("Later") { _, _ ->
+                finishAndRemoveTask()
+            }
+            .setOnCancelListener {
+                finishAndRemoveTask()
+            }
+            .show()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -100,13 +148,23 @@ class ShareReceiverActivity : ComponentActivity() {
     private fun showSuccess(message: String) {
         progress.visibility = View.GONE
         statusText.text = message
-        statusText.postDelayed({ finishAndRemoveTask() }, 1200)
+        statusText.postDelayed({ finishOrShowUpdate() }, 1200)
     }
 
     private fun showFailure(message: String) {
         progress.visibility = View.GONE
         statusText.text = message
-        statusText.postDelayed({ finishAndRemoveTask() }, 1800)
+        statusText.postDelayed({ finishOrShowUpdate() }, 1800)
+    }
+
+    private fun finishOrShowUpdate() {
+        val update = pendingUpdate
+        if (update != null) {
+            showUpdateDialog(update)
+            pendingUpdate = null // Clear to avoid showing multiple times
+        } else {
+            finishAndRemoveTask()
+        }
     }
 
     private fun showIdle(message: String) {

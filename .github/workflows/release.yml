@@ -23,28 +23,23 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
-
-      # To actually sign the release APK, you'd use a step like this:
-      # - name: Sign APK
-      #   uses: r0adkll/sign-android-release@v1
-      #   with:
-      #     releaseDirectory: app/build/outputs/apk/release
-      #     signingKeyBase64: ${{ secrets.KEYSTORE_B64 }}
-      #     alias: ${{ secrets.KEY_ALIAS }}
-      #     keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-      #     keyPassword: ${{ secrets.KEY_PASSWORD }}
-      # 
-      # Since this is an educational project, we will use the unsigned APK and rename it,
-      # or you can uncomment the block above when you add the secrets to your GitHub repo.
-      
-      - name: Rename APK
+      - name: Decode Keystore
         run: |
-          mv app/build/outputs/apk/release/app-release-unsigned.apk QuickDrop-${{ github.ref_name }}.apk
+          echo "${{ secrets.KEYSTORE_B64 }}" | base64 --decode > release.keystore
+
+      - name: Build & Sign Release APK
+        run: ./gradlew assembleRelease
+        env:
+          SIGNING_STORE_FILE: ${{ github.workspace }}/release.keystore
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/release/app-release.apk QuickDROP.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: QuickDrop-${{ github.ref_name }}.apk
+          files: QuickDROP.apk
           generate_release_notes: true

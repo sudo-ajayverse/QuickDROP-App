@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.core.content.getSystemService
 import androidx.work.Constraints
@@ -18,6 +19,8 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.quickdrop.sharetarget.updater.AutoUpdater
 
 class ShareReceiverActivity : ComponentActivity() {
 
@@ -25,7 +28,6 @@ class ShareReceiverActivity : ComponentActivity() {
     private lateinit var statusText: TextView
     private lateinit var versionText: TextView
     private lateinit var updateCheckSpinner: ProgressBar
-
     private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +44,8 @@ class ShareReceiverActivity : ComponentActivity() {
             checkForUpdates(isManualRefresh = true)
         }
 
-        // Show current version in the top bar
-        val currentVersion = com.quickdrop.sharetarget.updater.AutoUpdater.getCurrentVersion(this)
+        // Show current version
+        val currentVersion = AutoUpdater.getCurrentVersion(this)
         versionText.text = "v$currentVersion"
 
         val share = parseShareIntent(intent)
@@ -63,20 +65,17 @@ class ShareReceiverActivity : ComponentActivity() {
         }
 
         enqueueUploadWork(share)
-
-        // Check for updates in the background during share flow
         checkForUpdates(isManualRefresh = false)
     }
 
-    private var pendingUpdate: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo? = null
+    private var pendingUpdate: AutoUpdater.UpdateInfo? = null
 
     private fun checkForUpdates(isManualRefresh: Boolean) {
         if (!isManualRefresh) {
-            // Show spinner in the top bar while the API call is in-flight
             updateCheckSpinner.visibility = View.VISIBLE
         }
 
-        com.quickdrop.sharetarget.updater.AutoUpdater.checkForUpdates(
+        AutoUpdater.checkForUpdates(
             context = this,
             onUpdateAvailable = { updateInfo ->
                 runOnUiThread {
@@ -89,68 +88,52 @@ class ShareReceiverActivity : ComponentActivity() {
                     }
                 }
             },
-            onError = { error ->
+            onError = { _ ->
                 runOnUiThread { 
                     updateCheckSpinner.visibility = View.GONE
                     swipeRefresh.isRefreshing = false
                     if (isManualRefresh) {
-                        android.widget.Toast.makeText(this@ShareReceiverActivity, "Failed to check for updates.", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Update check failed.", Toast.LENGTH_SHORT).show()
                     }
                 }
-                android.util.Log.e("ShareReceiverActivity", "Update check failed: $error")
             },
             onUpToDate = {
                 runOnUiThread { 
                     updateCheckSpinner.visibility = View.GONE
                     swipeRefresh.isRefreshing = false
                     if (isManualRefresh) {
-                        android.widget.Toast.makeText(this@ShareReceiverActivity, "You have the latest version!", android.widget.Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "You have the latest version!", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         )
     }
 
-    private fun stripMarkdown(text: String): String {
-        return text
-            .replace(Regex("#{1,6}\\s*"), "")              // headings
-            .replace(Regex("\\[([^]]+)]\\([^)]+\\)"), "$1") // [text](url) → text
-            .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")      // **bold**
-            .replace(Regex("\\*(.+?)\\*"), "$1")            // *italic*
-            .replace(Regex("^\\s*[*-]\\s+", RegexOption.MULTILINE), "• ") // bullets
-            .trim()
-    }
-
-    private fun showUpdateDialog(updateInfo: com.quickdrop.sharetarget.updater.AutoUpdater.UpdateInfo) {
+    private fun showUpdateDialog(updateInfo: AutoUpdater.UpdateInfo) {
         if (isFinishing) return
+        
         val cleanNotes = stripMarkdown(updateInfo.releaseNotes)
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Update Available — ${updateInfo.version}")
-            .setMessage(cleanNotes.ifBlank { "A new version is available." })
-            .setPositiveButton("Update Now") { dialog, _ ->
-                dialog.dismiss()
-                android.widget.Toast.makeText(this, "Downloading update…", android.widget.Toast.LENGTH_SHORT).show()
-                com.quickdrop.sharetarget.updater.AutoUpdater.downloadApk(
-                    this,
-                    updateInfo.downloadUrl,
-                    updateInfo.version
-                )
-                // Don't close the app — let the download happen in the background
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("New Update Available")
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .setMessage("Version ${updateInfo.version} is ready to download.\n\nWhat's New:\n${cleanNotes.ifBlank { "Performance improvements and bug fixes." }}")
+            .setPositiveButton("Update Now") { _, _ ->
+                Toast.makeText(this, "Downloading update...", Toast.LENGTH_SHORT).show()
+                AutoUpdater.downloadApk(this, updateInfo.downloadUrl, updateInfo.version)
             }
-            .setNegativeButton("Later") { dialog, _ ->
-                dialog.dismiss()
-                // Just dismiss — don't close the app
-            }
-            .setOnCancelListener {
-                // Back press — just dismiss, don't close
-            }
+            .setNegativeButton("Later", null)
             .show()
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        recreate()
+    private fun stripMarkdown(text: String): String {
+        return text
+            .replace(Regex("#{1,6}\\s*"), "")
+            .replace(Regex("\\[([^]]+)]\\([^)]+\\)"), "$1")
+            .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
+            .replace(Regex("\\*(.+?)\\*"), "$1")
+            .replace(Regex("^\\s*[*-]\\s+", RegexOption.MULTILINE), "• ")
+            .trim()
     }
 
     private fun enqueueUploadWork(share: ShareData) {
@@ -172,21 +155,20 @@ class ShareReceiverActivity : ComponentActivity() {
             .setInputData(workData)
             .build()
 
-        val uniqueName = "quickdrop_upload_${System.currentTimeMillis()}"
-        val wm = WorkManager.getInstance(applicationContext)
-        wm.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request)
+        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            "upload_${System.currentTimeMillis()}",
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
 
-        wm.getWorkInfoByIdLiveData(request.id).observe(this) { info ->
+        WorkManager.getInstance(applicationContext).getWorkInfoByIdLiveData(request.id).observe(this) { info ->
+            if (info == null) return@observe
             when (info.state) {
-                WorkInfo.State.SUCCEEDED -> {
-                    showSuccess(getString(R.string.status_uploaded))
-                }
+                WorkInfo.State.SUCCEEDED -> showSuccess(getString(R.string.status_uploaded))
                 WorkInfo.State.FAILED -> {
-                    val message = info.outputData.getString(UploadWorker.KEY_ERROR_MESSAGE)
-                        ?: getString(R.string.status_upload_failed)
-                    showFailure(message)
+                    val msg = info.outputData.getString(UploadWorker.KEY_ERROR_MESSAGE) ?: getString(R.string.status_upload_failed)
+                    showFailure(msg)
                 }
-                WorkInfo.State.CANCELLED -> showFailure(getString(R.string.status_upload_cancelled))
                 else -> Unit
             }
         }
@@ -208,7 +190,7 @@ class ShareReceiverActivity : ComponentActivity() {
         val update = pendingUpdate
         if (update != null) {
             showUpdateDialog(update)
-            pendingUpdate = null // Clear to avoid showing multiple times
+            pendingUpdate = null
         } else {
             finishAndRemoveTask()
         }
@@ -217,7 +199,6 @@ class ShareReceiverActivity : ComponentActivity() {
     private fun showIdle(message: String) {
         progress.visibility = View.GONE
         statusText.text = message
-        // Do not auto-close on a normal launcher open.
     }
 
     private fun isNetworkAvailable(): Boolean {
@@ -230,67 +211,29 @@ class ShareReceiverActivity : ComponentActivity() {
     private fun parseShareIntent(intent: Intent?): ShareData {
         if (intent == null) return ShareData.EMPTY
         val action = intent.action
-        val type = intent.type
-
         val uris = mutableListOf<Uri>()
 
         if (Intent.ACTION_SEND == action) {
-            val uri = getStreamUri(intent)
-            if (uri != null) {
-                uris += uri
-            } else {
-                val clip = intent.clipData
-                if (clip != null && clip.itemCount > 0) {
-                    clip.getItemAt(0).uri?.let { uris += it }
-                }
-            }
+            getStreamUri(intent)?.let { uris += it }
         } else if (Intent.ACTION_SEND_MULTIPLE == action) {
-            val list = getStreamUriList(intent)
-            if (list != null) {
-                uris += list
-            } else {
-                val clip = intent.clipData
-                if (clip != null && clip.itemCount > 0) {
-                    for (idx in 0 until clip.itemCount) {
-                        clip.getItemAt(idx).uri?.let { uris += it }
-                    }
-                }
-            }
+            getStreamUriList(intent)?.let { uris += it }
         }
 
-        // For multiple, Android commonly uses a single wildcard type like "image/*" or "*/*".
-        val mimeTypes = uris.map { contentResolver.getType(it) ?: type ?: "application/octet-stream" }
+        val mimeTypes = uris.map { contentResolver.getType(it) ?: intent.type ?: "application/octet-stream" }
         val fileNames = uris.map { ContentResolverUtils.getDisplayName(contentResolver, it) ?: "shared_file" }
 
         return ShareData(uris, mimeTypes, fileNames)
     }
 
-    private fun getStreamUri(intent: Intent): Uri? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
-        }
-    }
+    private fun getStreamUri(intent: Intent): Uri? =
+        if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        else @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
 
-    private fun getStreamUriList(intent: Intent): ArrayList<Uri>? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
-        }
-    }
+    private fun getStreamUriList(intent: Intent): ArrayList<Uri>? =
+        if (Build.VERSION.SDK_INT >= 33) intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        else @Suppress("DEPRECATION") intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
 
-    data class ShareData(
-        val uris: List<Uri>,
-        val mimeTypes: List<String>,
-        val fileNames: List<String>,
-    ) {
-        companion object {
-            val EMPTY = ShareData(emptyList(), emptyList(), emptyList())
-        }
+    data class ShareData(val uris: List<Uri>, val mimeTypes: List<String>, val fileNames: List<String>) {
+        companion object { val EMPTY = ShareData(emptyList(), emptyList(), emptyList()) }
     }
 }
-

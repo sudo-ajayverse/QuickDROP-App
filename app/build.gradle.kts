@@ -12,6 +12,15 @@ android {
     // Read versions from gradle.properties
     val vCode = (project.findProperty("VERSION_CODE") as? String)?.toIntOrNull() ?: 7
     val vName = (project.findProperty("VERSION_NAME") as? String) ?: "0.7.3"
+    val signingStoreFile = System.getenv("SIGNING_STORE_FILE")
+    val signingStorePassword = System.getenv("SIGNING_STORE_PASSWORD")
+    val signingKeyAlias = System.getenv("SIGNING_KEY_ALIAS")
+    val signingKeyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+    val hasReleaseSigning = !signingStoreFile.isNullOrBlank() &&
+        !signingStorePassword.isNullOrBlank() &&
+        !signingKeyAlias.isNullOrBlank() &&
+        !signingKeyPassword.isNullOrBlank() &&
+        file(signingStoreFile).exists()
 
     defaultConfig {
         applicationId = "com.quickdrop.sharetarget"
@@ -35,9 +44,25 @@ android {
         buildConfigField("String", "REPO_NAME", "\"$rName\"")
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(signingStoreFile!!)
+                storePassword = signingStorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

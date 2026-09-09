@@ -6,10 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 
 class DownloadReceiver : BroadcastReceiver() {
     companion object {
-        private const val TAG = "DownloadReceiver"
+        private const val TAG = "QuickDropUpdater"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -17,8 +18,6 @@ class DownloadReceiver : BroadcastReceiver() {
             val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             if (downloadId == -1L) return
 
-            Log.i(TAG, "Download complete for ID: $downloadId")
-            
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val query = DownloadManager.Query().setFilterById(downloadId)
             val cursor = downloadManager.query(query)
@@ -30,12 +29,14 @@ class DownloadReceiver : BroadcastReceiver() {
                     if (status == DownloadManager.STATUS_SUCCESSFUL) {
                         val uri = downloadManager.getUriForDownloadedFile(downloadId)
                         if (uri != null) {
+                            Log.i(TAG, "Download successful. Installing: $uri")
                             installApk(context, uri)
-                        } else {
-                            Log.e(TAG, "Download successful but URI is null")
                         }
                     } else {
-                        Log.e(TAG, "Download failed or cancelled. Status: $status")
+                        val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                        val reason = if (reasonIndex != -1) cursor.getInt(reasonIndex) else -1
+                        Log.e(TAG, "Download failed. Status: $status, Reason: $reason")
+                        Toast.makeText(context, "Update download failed.", Toast.LENGTH_SHORT).show()
                     }
                 }
                 cursor.close()
@@ -49,14 +50,11 @@ class DownloadReceiver : BroadcastReceiver() {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                // For modern Android, we don't need FLAG_ACTIVITY_CLEAR_TOP usually, 
-                // but let's ensure the installer stays on top.
             }
-
             context.startActivity(installIntent)
-            Log.i(TAG, "Install intent started for $uri")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start install intent", e)
+            Log.e(TAG, "Failed to start installation: ${e.message}")
+            Toast.makeText(context, "Installation failed. Please install manually from Downloads.", Toast.LENGTH_LONG).show()
         }
     }
 }

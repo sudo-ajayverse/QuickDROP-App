@@ -5,7 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
-import com.quickdrop.sharetarget.BuildConfig
+import com.quickdrop.sharetarget.BuildConfigValues
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -17,9 +17,9 @@ import java.io.IOException
 object AutoUpdater {
     private const val TAG = "AutoUpdater"
     
-    // Use repo info from BuildConfig (defined in build.gradle.kts from gradle.properties)
-    private val REPO_OWNER = BuildConfig.REPO_OWNER
-    private val REPO_NAME = BuildConfig.REPO_NAME
+    // Read repo info dynamically from BuildConfigValues
+    private val REPO_OWNER = BuildConfigValues.getString("REPO_OWNER", "sudo-ajayverse")
+    private val REPO_NAME = BuildConfigValues.getString("REPO_NAME", "QuickDROP-App")
     private val GITHUB_API_URL = "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
 
     private val client = OkHttpClient()

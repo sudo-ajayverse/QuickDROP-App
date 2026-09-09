@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/windowBackground"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="?android:attr/windowBackground">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -18,65 +19,77 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Bold Modern Top Bar -->
+            <!-- Top bar inside ScrollView to allow "Entire Screen" swipe down effect -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_margin="16dp"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="8dp"
-                app:strokeWidth="0dp">
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#1A000000">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="64dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="28dp">
+                    android:paddingHorizontal="16dp">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_quickdrop"
+                        app:tint="?attr/colorPrimary"
+                        android:contentDescription="@string/app_name" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
                         android:layout_weight="1"
                         android:text="@string/app_name"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="36sp"
-                        android:textStyle="bold" />
+                        android:textAppearance="?attr/textAppearanceHeadline6"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/versionText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/version_badge_bg"
-                        android:paddingHorizontal="20dp"
-                        android:paddingVertical="10dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
                         android:textColor="#FFFFFF"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        tools:text="v0.7.3" />
 
                     <ProgressBar
                         android:id="@+id/updateCheckSpinner"
                         style="?android:attr/progressBarStyleSmall"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:layout_marginStart="20dp"
-                        android:visibility="gone" />
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="12dp"
+                        android:visibility="gone"
+                        android:indeterminateTint="?attr/colorPrimary" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Centered Status Content -->
+            <!-- Main Content Area -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:padding="48dp">
+                android:padding="32dp">
 
                 <ProgressBar
                     android:id="@+id/progress"
                     style="?android:attr/progressBarStyleLarge"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
                     android:indeterminateTint="?attr/colorPrimary"
                     android:visibility="gone" />
 
@@ -84,13 +97,12 @@
                     android:id="@+id/statusText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="48dp"
+                    android:layout_marginTop="24dp"
                     android:gravity="center"
-                    android:lineSpacingExtra="12dp"
+                    android:lineSpacingExtra="4dp"
                     android:text="@string/status_share_hint"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:textSize="28sp"
-                    android:textStyle="bold" />
+                    android:textAppearance="?attr/textAppearanceBody1"
+                    android:textColor="?android:attr/textColorSecondary" />
 
             </LinearLayout>
         </LinearLayout>

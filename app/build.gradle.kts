@@ -5,82 +5,40 @@ plugins {
 
 import java.util.Properties
 
-/**
- * Read secrets from (in order): local.properties -> Gradle properties -> environment variables.
- */
-val localProperties = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) {
-        f.inputStream().use { load(it) }
-    }
-}
-
-fun readProp(name: String, defaultValue: String = ""): String {
-    val fromLocal = localProperties.getProperty(name)
-    val fromGradle = (project.findProperty(name) as String?)
-    val fromEnv = System.getenv(name)
-    return (fromLocal ?: fromGradle ?: fromEnv ?: defaultValue).trim()
-}
-
-fun asBuildConfigString(value: String): String {
-    val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
-    return "\"$escaped\""
-}
-
-// Read version info from gradle.properties
-val verCode = (project.findProperty("VERSION_CODE") as? String)?.toIntOrNull() ?: 1
-val verName = (project.findProperty("VERSION_NAME") as? String) ?: "1.0.0"
-
-// Read Repo info from gradle.properties
-val repoOwner = project.findProperty("GITHUB_REPO_OWNER") as? String ?: "sudo-ajayverse"
-val repoName = project.findProperty("GITHUB_REPO_NAME") as? String ?: "QuickDROP-App"
-
 android {
     namespace = "com.quickdrop.sharetarget"
     compileSdk = 35
+
+    // Read versions from gradle.properties
+    val vCode = (project.findProperty("VERSION_CODE") as? String)?.toIntOrNull() ?: 7
+    val vName = (project.findProperty("VERSION_NAME") as? String) ?: "0.7.3"
 
     defaultConfig {
         applicationId = "com.quickdrop.sharetarget"
         minSdk = 24
         targetSdk = 35
-        versionCode = verCode
-        versionName = verName
+        versionCode = vCode
+        versionName = vName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "SUPABASE_URL", asBuildConfigString(readProp("SUPABASE_URL")))
-        buildConfigField("String", "SUPABASE_ANON_KEY", asBuildConfigString(readProp("SUPABASE_ANON_KEY")))
-        buildConfigField("String", "SUPABASE_BUCKET", asBuildConfigString(readProp("SUPABASE_BUCKET", "files")))
-        buildConfigField("String", "SUPABASE_FILES_TABLE", asBuildConfigString(readProp("SUPABASE_FILES_TABLE", "files")))
+        // Hardcoded Supabase Credentials
+        buildConfigField("String", "SUPABASE_URL", "\"https://llxmpzutwtuytcgtlskc.supabase.co\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxseG1wenV0d3R1eXRjZ3Rsc2tjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0Mjk2ODEsImV4cCI6MjA4NzAwNTY4MX0.a-x8bi5uDtkUGR-d7NBsfwMOEYftju7b91IzgDIcPCA\"")
+        buildConfigField("String", "SUPABASE_BUCKET", "\"files\"")
+        buildConfigField("String", "SUPABASE_FILES_TABLE", "\"files\"")
 
-        // Repo info for AutoUpdater
-        buildConfigField("String", "REPO_OWNER", asBuildConfigString(repoOwner))
-        buildConfigField("String", "REPO_NAME", asBuildConfigString(repoName))
-    }
-
-    signingConfigs {
-        create("release") {
-            val storeFile = System.getenv("SIGNING_STORE_FILE")
-            val storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-            val keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-            val keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-            if (storeFile != null) {
-                this.storeFile = file(storeFile)
-                this.storePassword = storePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
-            }
-        }
+        // Dynamic Repo Info
+        val rOwner = (project.findProperty("GITHUB_REPO_OWNER") as? String) ?: "sudo-ajayverse"
+        val rName = (project.findProperty("GITHUB_REPO_NAME") as? String) ?: "QuickDROP-App"
+        buildConfigField("String", "REPO_OWNER", "\"$rOwner\"")
+        buildConfigField("String", "REPO_NAME", "\"$rName\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            val cfg = signingConfigs.getByName("release")
-            if (cfg.storeFile != null) {
-                signingConfig = cfg
-            }
         }
     }
 
@@ -104,8 +62,4 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

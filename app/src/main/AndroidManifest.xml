@@ -14,13 +14,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.QuickDropShareTarget">
 
+        <!-- Use full class name to resolve deployment issues -->
         <activity
-            android:name=".ShareReceiverActivity"
+            android:name="com.quickdrop.sharetarget.ShareReceiverActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@style/Theme.QuickDropShareTarget">
 
-            <!-- Allows launching the app directly (Android Studio / launcher icon). -->
+            <!-- Allows launching the app directly -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -52,7 +53,7 @@
         </provider>
 
         <receiver
-            android:name=".updater.DownloadReceiver"
+            android:name="com.quickdrop.sharetarget.updater.DownloadReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
@@ -62,4 +63,3 @@
     </application>
 
 </manifest>
-

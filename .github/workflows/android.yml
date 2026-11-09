@@ -56,10 +56,10 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_BUCKET: ${{ secrets.SUPABASE_BUCKET }}
-          SUPABASE_FILES_TABLE: ${{ secrets.SUPABASE_FILES_TABLE }}
+          SUPABASE_URL: https://llxmpzutwtuytcgtlskc.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxseG1wenV0d3R1eXRjZ3Rsc2tjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0Mjk2ODEsImV4cCI6MjA4NzAwNTY4MX0.a-x8bi5uDtkUGR-d7NBsfwMOEYftju7b91IzgDIcPCA
+          SUPABASE_BUCKET: files
+          SUPABASE_FILES_TABLE: files
 
       - name: Rename APK to QuickDROP.apk
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/QuickDROP.apk || mv $(find app/build/outputs/apk/release/ -name "*.apk" | head -1) app/build/outputs/apk/release/QuickDROP.apk

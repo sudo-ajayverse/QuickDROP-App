@@ -11,7 +11,7 @@ android {
 
     // Read versions from gradle.properties
     val vCode = (project.findProperty("VERSION_CODE") as? String)?.toIntOrNull() ?: 7
-    val vName = (project.findProperty("VERSION_NAME") as? String) ?: "0.7.3"
+    val vName = (project.findProperty("VERSION_NAME") as? String) ?: "0.8"
     val signingStoreFile = System.getenv("SIGNING_STORE_FILE")
     val signingStorePassword = System.getenv("SIGNING_STORE_PASSWORD")
     val signingKeyAlias = System.getenv("SIGNING_KEY_ALIAS")
